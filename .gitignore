@@ -1,0 +1,7 @@
+# Ignora tutti i file eseguibili
+*.exe
+*.out
+*.app
+# Se hai una cartella specifica per i file compilati (es. build o bin)
+bin/
+build/

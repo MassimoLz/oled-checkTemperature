@@ -228,8 +228,7 @@ float leggiTemperaturaCPU() {
 int main()
 {
     OledDisplay oled(0, 24, 25);
-    int temp =leggiTemperaturaCPU();
-    std::string temperatura = std::to_string(temp);
+    
     if (!oled.begin())
     {
         std::cerr << "Errore inizializzazione hardware!" << std::endl;
@@ -237,6 +236,8 @@ int main()
     }
     while (true)
     {
+        int temp =leggiTemperaturaCPU();
+    std::string temperatura = std::to_string(temp);
        oled.scrivi("temperatura:" + temperatura +" C.",2);
     oled.sendBuffer(); 
     std::this_thread::sleep_for(std::chrono::seconds(2));
