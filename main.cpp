@@ -8,6 +8,8 @@
 #include <cctype> // Necessario per toupper
 #include <bitset>
 #include <fstream> // Necessaria per leggere i file (ifstream)
+#include <chrono>
+#include <thread>
 
 class OledDisplay
 {
@@ -93,6 +95,8 @@ public:
             schermo[i] = 0;
         }
         sendBuffer();
+        riga=0;
+        pagina=0;
     }
     void disegnariga(unsigned char seguenza, int rigaa, int pagina)
     {
@@ -130,18 +134,12 @@ public:
 
     void Scale(const std::array<unsigned char, 5> &font, int scale)
 {
-    // 1. CONTROLLO "A CAPO" (Prima di disegnare!)
-    // Un carattere occupa 5 colonne * scala. Più 1 colonna * scala per lo spazio.
-    // Totale larghezza carattere scalato: 6 * scale.
+    //controllo per andare a capo
     if (riga + (6 * scale) > 127)
     {
         riga = 0;        // Torniamo all'inizio a sinistra
         pagina += scale; // Scendiamo in basso della grandezza del font
         
-        // Se esce dallo schermo in basso, torna in cima (opzionale)
-        if (pagina > 7) {
-            pagina = 0;
-        }
     }
 
     int riga_iniziale = riga;
@@ -237,11 +235,14 @@ int main()
         std::cerr << "Errore inizializzazione hardware!" << std::endl;
         return 1;
     }
-
-oled.scrivi("temperatura:" + temperatura +" C.",2);
-    oled.sendBuffer();
+    while (true)
+    {
+       oled.scrivi("temperatura:" + temperatura +" C.",2);
+    oled.sendBuffer(); 
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    oled.clear();
+    }
     
-
     std::cout << "Display OLED pronto e buffer inviato!" << std::endl;
     return 0;
 }
