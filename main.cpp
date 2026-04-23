@@ -10,7 +10,10 @@
 #include <fstream> // Necessaria per leggere i file (ifstream)
 #include <chrono>
 #include <thread>
-
+#include <wiringPiI2C.h>
+#include <iomanip>
+#include <cmath>
+float celsius=0;
 class OledDisplay
 {
 private:
@@ -127,6 +130,7 @@ public:
         for (int i = 0; i < parola.size(); i++)
         {
             x = std::toupper(parola[i]);
+            //std::cout<<x<<std::endl;
             byte = font_mappa.at(x);
             Scale(byte, scale);
         }
@@ -146,6 +150,7 @@ public:
 
     for (int i = 0; i < 5; i++)
     {
+        
         unsigned int byte_sorgente = font[i];
         int contatore = 0;
         
@@ -225,10 +230,38 @@ float leggiTemperaturaCPU() {
 
     return temperatura;
 }
+void SensTemp()
+{
+    // 0x5a è l'indirizzo che abbiamo appena visto con i2cdetect
+    int fd = wiringPiI2CSetup(0x5a);
+
+    if (fd == -1) {
+        std::cerr << "Errore inizializzazione I2C!" << std::endl;
+        exit(1);
+    }
+
+    std::cout << "Sensore GY-906 pronto!" << std::endl;
+    std::cout << "Premi Ctrl+C per uscire" << std::endl;
+
+    while(true) 
+    {
+        // Leggiamo la temperatura dell'oggetto dal registro 0x07
+        int rawData = wiringPiI2CReadReg16(fd, 0x07);
+
+        if (rawData != -1) {
+            // Formula corretta: (Dato * 0.02) - 273.15
+          celsius = (rawData * 0.02) - 273.15;
+        } 
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    } 
+}
 int main()
 {
-    OledDisplay oled(0, 24, 25);
     
+    OledDisplay oled(0, 24, 25);
+    std::thread gy906(SensTemp);
+    std::array <char,5> gradi;
+    std::string c;
     if (!oled.begin())
     {
         std::cerr << "Errore inizializzazione hardware!" << std::endl;
@@ -236,11 +269,17 @@ int main()
     }
     while (true)
     {
-        int temp =leggiTemperaturaCPU();
-    std::string temperatura = std::to_string(temp);
-       oled.scrivi("temperatura:" + temperatura +" C.",2);
+        c = std::to_string(celsius);
+        for(int i =0;i<4;i++)
+        {
+            gradi[i] = c[i];
+        }
+        gradi[4]= '\0';
+       std::string s(gradi.data());
+  
+       oled.scrivi("temperatura:" + s +" C.",2);
     oled.sendBuffer(); 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     oled.clear();
     }
     
